@@ -1,3 +1,4 @@
+// Package tree implements binary search tree related operations with thread safety
 package tree
 
 import (
@@ -41,17 +42,17 @@ type BSTree struct {
 // 0, 1, 2, 3 respectively denotes traversing in Inorder, Preorder,
 // Postorder, levelorder.
 const (
-	InorderTrav   = 0
-	PreorderTrav  = 1
-	PostorderTrav = 2
-	LevelTrav     = 3
+	InorderTrav = iota
+	PreorderTrav
+	PostorderTrav
+	LevelTrav
 )
 
-// TravFunc is a type of function with accepting a pointer to Tnode
-// and a channel of Tree as its arguments.
+// TravFunc is used for traversing the binary search tree, which accepts a pointer to root node
+// and a channel as used to send traversing sequence.
 type TravFunc func(root *Tnode, ch chan<- interface{})
 
-// NewBSTree returns a pointer to binary tree.
+// NewBSTree returns an empty binary tree.
 func NewBSTree() *BSTree {
 	return &BSTree{mux: &sync.Mutex{}}
 }
@@ -62,7 +63,6 @@ func insert(tn *Tnode, data container.Interface) (*Tnode, error) {
 	}
 
 	itf := tn.data.(container.Interface)
-	// Faild to insert
 	if itf.Find(data) {
 		return tn, container.ErrDataExists
 	}
@@ -114,7 +114,8 @@ func lookup(find *Tnode, parent *Tnode, key interface{}) (*Tnode, *Tnode) {
 
 }
 
-// Search search tree to found data specified by key. If the tree is empty, returns ErrEmptyTree. If not found, returns ErrNotExist.
+// Search search tree to found data associated with the provided key. If the tree is empty, returns ErrEmptyTree.
+// If not found, returns ErrNotExist.
 func (bt *BSTree) Search(key interface{}) (interface{}, error) {
 	bt.mux.Lock()
 	defer bt.mux.Unlock()
@@ -126,11 +127,12 @@ func (bt *BSTree) Search(key interface{}) (interface{}, error) {
 	if tn == nil {
 		return nil, container.ErrNotExist
 	}
+
 	return tn.data, nil
 }
 
-// Delete deletes data found by key from binary tree. if tree is empty, Delete returns ErrEmptyTree, if can't found the data specified by
-// the key, it will return ErrNotExist.
+// Delete deletes the data found by key. if tree is empty, Delete returns ErrEmptyTree,
+// if the data doesn't exist, it will return ErrNotExist.
 func (bt *BSTree) Delete(key interface{}) error {
 	bt.mux.Lock()
 	defer bt.mux.Unlock()
@@ -202,9 +204,7 @@ func findLeftMostNode(ret *Tnode, parent *Tnode) (*Tnode, *Tnode) {
 		return ret, parent
 	}
 
-	ret, parent = findLeftMostNode(ret.lightChild, ret)
-
-	return ret, parent
+	return findLeftMostNode(ret.lightChild, ret)
 }
 
 func findRightMostNode(ret *Tnode, parent *Tnode) (*Tnode, *Tnode) {
@@ -212,12 +212,10 @@ func findRightMostNode(ret *Tnode, parent *Tnode) (*Tnode, *Tnode) {
 		return ret, parent
 	}
 
-	ret, parent = findRightMostNode(ret.rightChild, ret)
-
-	return ret, parent
+	return findRightMostNode(ret.rightChild, ret)
 }
 
-// Update updates the data found by key to val. If the tree is empty, returns ErrEmptyTree. If not found, returns ErrNotExist.
+// Update updates the value associated with key to val. If the tree is empty, returns ErrEmptyTree. If not found, returns ErrNotExist.
 func (bt *BSTree) Update(key interface{}, val interface{}) error {
 	bt.mux.Lock()
 	defer bt.mux.Unlock()
@@ -242,7 +240,6 @@ func inorderTraversal(tn *Tnode, ch chan<- interface{}) {
 	inorderTraversal(tn.lightChild, ch)
 	ch <- tn.data
 	inorderTraversal(tn.rightChild, ch)
-
 }
 
 func preorderTraversal(tn *Tnode, ch chan<- interface{}) {
@@ -289,7 +286,6 @@ func levelTraversal(tn *Tnode, ch chan<- interface{}) {
 // such as InorderTrav, PreorderTrav, PostorderTrav, LevelTrav.
 func (bt *BSTree) Traversal(TravType int) <-chan interface{} {
 	ch := make(chan interface{})
-
 	go func() {
 		bt.mux.Lock()
 		defer bt.mux.Unlock()
@@ -459,14 +455,6 @@ func (bt *BSTree) FullTree() bool {
 	if bt.size == int(math.Pow(2, float64(h+1)))-1 {
 		return true
 	}
-	return false
-}
-
-// Balanced reports whether the tree is balanced
-func (bt *BSTree) Balanced() bool {
-	bt.mux.Lock()
-	defer bt.mux.Unlock()
-
 	return false
 }
 

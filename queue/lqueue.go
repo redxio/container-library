@@ -10,7 +10,7 @@ type qnode struct {
 	data interface{}
 }
 
-// LQueue is a FIFO queue, which implemented using doubly linked list.
+// LQueue represents a FIFO queue implemented using doubly linked list.
 type LQueue struct {
 	mux  *sync.Mutex
 	tail *qnode
@@ -18,7 +18,7 @@ type LQueue struct {
 	size int
 }
 
-// NewLQueue returns a pointer to LQueue.
+// NewLQueue returns a new instance of LQueue.
 func NewLQueue() *LQueue {
 	return &LQueue{mux: &sync.Mutex{}}
 }

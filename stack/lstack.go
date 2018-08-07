@@ -9,7 +9,7 @@ type node struct {
 	next *node
 }
 
-// LinkedStack is a stack which using singly linked list as its underlying implemetation.
+// LinkedStack represents a LIFO stack, which using singly linked list as its underlying implemetation.
 type LinkedStack struct {
 	mux  *sync.Mutex
 	head *node
@@ -19,7 +19,7 @@ type LinkedStack struct {
 // LStack is alias for LinkedStack.
 type LStack = LinkedStack
 
-// NewLStack returns a pointer to LinkedStack.
+// NewLStack returns a new instance of LinkedStack.
 func NewLStack() *LStack {
 	return &LStack{mux: &sync.Mutex{}}
 }

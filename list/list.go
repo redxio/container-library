@@ -1,9 +1,8 @@
-// Package list implements a library for singly linked list with thread safety, which supports
+// Package list implements singly linked list with thread safety, which supports
 // partially concurrent operations on list.
 package list
 
 import (
-	"log"
 	"runtime"
 	"sync"
 
@@ -39,15 +38,14 @@ type splitResult struct {
 // LList is alias for LinkedList.
 type LList = LinkedList
 
-// SortFunc is a type of sorting method.
+// SortFunc represents the type of sorting method implemented by the user.
 type SortFunc func(head *Node, size ...int)
 
 var (
-	// SizOfSublst represents that every how much size of list start a goroutine. -1 is default values, indiacates that
-	// user doesn't change this value.
+	// SizOfSublst represents that every how much size of list start a goroutine. -1 is default values.
 	SizOfSublst = -1
 
-	// SetSizOfSublst is used for setting the SizOfSublst dynamically.
+	// SetSizOfSublst is used to set the size of the child linked list according to the length of the linked list
 	SetSizOfSublst func(size int) int
 
 	nCPUs = runtime.NumCPU()
@@ -75,9 +73,8 @@ func (ll *LinkedList) Insert(data container.Interface) {
 func getSizOfSublst(size int) int {
 	var sizofsublst int
 	if SetSizOfSublst != nil {
-		sizofsublst = SetSizOfSublst(size)
-		if sizofsublst < 0 {
-			log.Fatal("Negative number")
+		if sizofsublst = SetSizOfSublst(size); sizofsublst < 0 {
+			panic("Negative number")
 		} else if sizofsublst == 0 {
 			sizofsublst = size
 		}
@@ -85,10 +82,8 @@ func getSizOfSublst(size int) int {
 		sizofsublst = SizOfSublst
 	} else if SizOfSublst == 0 {
 		sizofsublst = size
-	} else {
-		if sizofsublst = size / nCPUs; size <= nCPUs {
-			sizofsublst = size
-		}
+	} else if sizofsublst = size / nCPUs; size <= nCPUs {
+		sizofsublst = size
 	}
 	return sizofsublst
 }
@@ -136,7 +131,7 @@ func splitList(ll *LinkedList, sizofsublst int) <-chan *splitResult {
 	return ch
 }
 
-// Delete deletes data to be specified by key from linked list.
+// Delete deletes data specified by key from linked list.
 func (ll *LinkedList) Delete(key interface{}) error {
 	ll.mux.Lock()
 	defer ll.mux.Unlock()
@@ -155,7 +150,7 @@ func (ll *LinkedList) Delete(key interface{}) error {
 			return nil
 		}
 		rw.Lock()
-		res.prev.next = res.find.next // WRITE
+		res.prev.next = res.find.next
 		rw.Unlock()
 		ll.size--
 		return nil
@@ -163,7 +158,7 @@ func (ll *LinkedList) Delete(key interface{}) error {
 	return container.ErrNotExist
 }
 
-// Search searches linked list by lanuching multiple goroutines
+// Search searches data associated with key by lanuching multiple goroutines
 func (ll *LinkedList) Search(key interface{}) (interface{}, error) {
 	ll.mux.Lock()
 	defer ll.mux.Unlock()
@@ -193,7 +188,7 @@ func multiGoroutinesFind(head *Node, splitCh <-chan *splitResult, key interface{
 			walk := split.head
 			var prev *Node
 			rw.RLock()
-			end := split.tail.next // READ
+			end := split.tail.next
 			rw.RUnlock()
 
 			for walk != end {
@@ -212,7 +207,7 @@ func multiGoroutinesFind(head *Node, splitCh <-chan *splitResult, key interface{
 				default:
 					prev = walk
 					rw.RLock()
-					walk = walk.next // READ
+					walk = walk.next
 					rw.RUnlock()
 				}
 			}
@@ -237,7 +232,7 @@ func multiGoroutinesFind(head *Node, splitCh <-chan *splitResult, key interface{
 func findSubList(split *splitResult, key interface{}, findResCh chan *findResult, terminatedCh chan struct{}, wg *sync.WaitGroup) {
 	defer wg.Done()
 	walk := split.head
-	end := split.tail.next // READ
+	end := split.tail.next
 	var prev *Node
 
 	for walk != end {
@@ -255,12 +250,12 @@ func findSubList(split *splitResult, key interface{}, findResCh chan *findResult
 			return
 		default:
 			prev = walk
-			walk = walk.next // READ
+			walk = walk.next
 		}
 	}
 }
 
-// Update updates specific data from linked list.
+// Update updates data associated with key in linked list.
 func (ll *LinkedList) Update(key interface{}, val interface{}) error {
 	ll.mux.Lock()
 	defer ll.mux.Unlock()
@@ -337,7 +332,6 @@ func (ll *LinkedList) Reverse() {
 		wg.Add(1)
 		go reverse(split, &ll.head, &wg)
 	}
-
 	wg.Wait()
 }
 
@@ -363,7 +357,7 @@ func (ll *LinkedList) Clear() {
 	ll.size = 0
 }
 
-// BubbleSort represents Bubble sorting, which can be used as a predefined function in parameter to method SortWith.
+// BubbleSort represents Bubble sorting, which can be used as parameter to method SortWith.
 func BubbleSort(head *Node) {
 	var end *Node
 	var start = head
@@ -396,7 +390,7 @@ func BubbleSort(head *Node) {
 	}*/
 }
 
-// Sort sorts the linked list, which uses merge sorting as its default sorting method.
+// Sort sorts the linked list, using merge sorting by default
 func (ll *LinkedList) Sort() {
 	ll.mux.Lock()
 	defer ll.mux.Unlock()
@@ -457,7 +451,7 @@ func mergeList(front, back *Node) *Node {
 	return head
 }
 
-// InsertionSort represents Bubble sorting, which can be used as a predefined function in parameter to method SortWith.
+// InsertionSort represents insertion sorting, which can be used as parameter to method SortWith.
 func InsertionSort(phead **Node) {
 	var sorted *Node
 	var current = *phead
@@ -485,7 +479,7 @@ func sortedInsert(phead **Node, newNode *Node) {
 	}
 }
 
-// SortWith sorts linked list using user user defined sorting method.
+// SortWith sorts the linked list using user defined sorting method.
 func (ll *LinkedList) SortWith(sort SortFunc) {
 	ll.mux.Lock()
 	defer ll.mux.Unlock()

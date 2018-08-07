@@ -5,13 +5,13 @@ import (
 	"sync"
 )
 
-// Stack is a Last-In-First-Out data structure, which implemented using dynamic array.
+// Stack represents a LIFO stack implemented using dynamic array.
 type Stack struct {
 	mux  *sync.Mutex
 	data []interface{}
 }
 
-// NewStack returns a pointer to Stack.
+// NewStack returns a new instance of Stack.
 func NewStack() *Stack {
 	return &Stack{mux: &sync.Mutex{}}
 }

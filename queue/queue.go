@@ -1,17 +1,17 @@
-// Package queue implements a library for queue with thread safety.
+// Package queue implements queue-related operations with thread safety.
 package queue
 
 import (
 	"sync"
 )
 
-// Queue represents a First-In-First-Out data structure, which implemented using dynamic array.
+// Queue represents a FIFO queue implemented using dynamic array.
 type Queue struct {
 	mux  *sync.Mutex
 	data []interface{}
 }
 
-// NewQueue returns a pointer to Queue.
+// NewQueue returns a new instance of LQueue.
 func NewQueue() *Queue {
 	return &Queue{mux: &sync.Mutex{}}
 }
