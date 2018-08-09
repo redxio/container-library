@@ -1,6 +1,6 @@
 ## Introduction
 
-Go implementation of an basic container library for common data structure such as stack, queue, list and binary search tree. It is safe for cocurrent use by multiple goroutines, some of the operations on linked list use the concurrency feature of the golang!
+Go implementation of an basic container library for common data structure such as stack, queue, linked list and binary search tree. It is safe for cocurrent use by multiple goroutines, some of the operations on linked list use the concurrency feature of the golang!
 
 ## Installation
 
