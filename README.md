@@ -1,9 +1,6 @@
-# Basic Container Library
-
 ## Introduction
 
-Go implementation of an basic container library with goroutine safety for common data structure such as
-stack, queue, list, binary tree, some of the operations of the linked list use the concurrency of the golang. This project is my first open source project, any suggestions are welcome!
+Go implementation of an basic container library for common data structure such as stack, queue, list and binary search tree. It is safe for cocurrent use by multiple goroutines, some of the operations on linked list use the concurrency feature of the golang!
 
 ## Installation
 
@@ -12,6 +9,10 @@ stack, queue, list, binary tree, some of the operations of the linked list use t
 ## Test
 
 > $ go test -race github.com/NzKSO/container/...
+
+## Document
+
+see godoc [here](https://godoc.org/github.com/NzKSO/container-library)
 
 ## License
 
