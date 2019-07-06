@@ -20,9 +20,13 @@ func (pnode *Node) Next() *Node {
 	return pnode.next
 }
 
+// GetData returns the data of current node.
+func (pnode *Node) GetData() interface{} {
+	return pnode.data
+}
+
 // LinkedList represents a singly linked list.
 type LinkedList struct {
-	mux  *sync.Mutex
 	head *Node
 	size int
 }
@@ -55,14 +59,11 @@ var (
 
 // NewLinkedList returns a pointer to linked list.
 func NewLinkedList() *LinkedList {
-	return &LinkedList{mux: &sync.Mutex{}}
+	return &LinkedList{}
 }
 
 // Insert inserts data into linked list.
 func (ll *LinkedList) Insert(data container.Interface) {
-	ll.mux.Lock()
-	defer ll.mux.Unlock()
-
 	newNode := new(Node)
 	newNode.data = data
 	newNode.next = ll.head
@@ -133,9 +134,6 @@ func splitList(ll *LinkedList, sizofsublst int) <-chan *splitResult {
 
 // Delete deletes data specified by key from linked list.
 func (ll *LinkedList) Delete(key interface{}) error {
-	ll.mux.Lock()
-	defer ll.mux.Unlock()
-
 	if ll.size == 0 && ll.head == nil {
 		return container.ErrEmptyList
 	}
@@ -160,9 +158,6 @@ func (ll *LinkedList) Delete(key interface{}) error {
 
 // Search searches data associated with key by lanuching multiple goroutines
 func (ll *LinkedList) Search(key interface{}) (interface{}, error) {
-	ll.mux.Lock()
-	defer ll.mux.Unlock()
-
 	if ll.head == nil && ll.size == 0 {
 		return nil, container.ErrEmptyList
 	}
@@ -257,9 +252,6 @@ func findSubList(split *splitResult, key interface{}, findResCh chan *findResult
 
 // Update updates data associated with key in linked list.
 func (ll *LinkedList) Update(key interface{}, val interface{}) error {
-	ll.mux.Lock()
-	defer ll.mux.Unlock()
-
 	if ll.head == nil && ll.size == 0 {
 		return container.ErrEmptyList
 	}
@@ -280,8 +272,6 @@ func (ll *LinkedList) Update(key interface{}, val interface{}) error {
 func (ll *LinkedList) Traversal() <-chan interface{} {
 	ch := make(chan interface{}, ll.size)
 	go func() {
-		ll.mux.Lock()
-		defer ll.mux.Unlock()
 		defer close(ch)
 
 		if ll.head == nil && ll.size == 0 {
@@ -319,8 +309,6 @@ func reverse(split *splitResult, ln **Node, wg *sync.WaitGroup) {
 
 // Reverse reverses the linked list concurrently.
 func (ll *LinkedList) Reverse() {
-	ll.mux.Lock()
-	defer ll.mux.Unlock()
 	if ll.head == nil || ll.head.next == nil {
 		return
 	}
@@ -342,17 +330,11 @@ func (ll *LinkedList) Empty() bool {
 
 // Size returns the size of the linked list.
 func (ll *LinkedList) Size() int {
-	ll.mux.Lock()
-	defer ll.mux.Unlock()
-
 	return ll.size
 }
 
 // Clear clears the linked list, it will drop all of data.
 func (ll *LinkedList) Clear() {
-	ll.mux.Lock()
-	defer ll.mux.Unlock()
-
 	ll.head = nil
 	ll.size = 0
 }
@@ -392,8 +374,6 @@ func BubbleSort(head *Node) {
 
 // Sort sorts the linked list, using merge sorting by default
 func (ll *LinkedList) Sort() {
-	ll.mux.Lock()
-	defer ll.mux.Unlock()
 	if ll.head == nil || ll.head.next == nil {
 		return
 	}
@@ -481,9 +461,6 @@ func sortedInsert(phead **Node, newNode *Node) {
 
 // SortWith sorts the linked list using user defined sorting method.
 func (ll *LinkedList) SortWith(sort SortFunc) {
-	ll.mux.Lock()
-	defer ll.mux.Unlock()
-
 	if ll.head == nil || ll.head.next == nil {
 		return
 	}

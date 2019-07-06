@@ -4,7 +4,6 @@ package tree
 import (
 	"math"
 	"reflect"
-	"sync"
 
 	"github.com/NzKSO/container"
 	"github.com/NzKSO/container/queue"
@@ -34,15 +33,17 @@ func (tn *Tnode) GetData() interface{} {
 
 // BSTree represents an binary tree.
 type BSTree struct {
-	mux  *sync.Mutex
 	root *Tnode
 	size int
 }
 
-// 0, 1, 2, 3 respectively denotes traversing in Inorder, Preorder,
+// TraversalType represents type of traversal in binary tree
+type TraversalType int
+
+// These constants respectively denotes traversing in Inorder, Preorder,
 // Postorder, levelorder.
 const (
-	InorderTrav = iota
+	InorderTrav TraversalType = iota
 	PreorderTrav
 	PostorderTrav
 	LevelTrav
@@ -54,7 +55,7 @@ type TravFunc func(root *Tnode, ch chan<- interface{})
 
 // NewBSTree returns an empty binary tree.
 func NewBSTree() *BSTree {
-	return &BSTree{mux: &sync.Mutex{}}
+	return &BSTree{}
 }
 
 func insert(tn *Tnode, data container.Interface) (*Tnode, error) {
@@ -80,9 +81,6 @@ func insert(tn *Tnode, data container.Interface) (*Tnode, error) {
 
 // Insert inserts data to binary tree.
 func (bt *BSTree) Insert(data container.Interface) error {
-	bt.mux.Lock()
-	defer bt.mux.Unlock()
-
 	var err error
 	bt.root, err = insert(bt.root, data)
 	if err != nil {
@@ -117,8 +115,6 @@ func lookup(find *Tnode, parent *Tnode, key interface{}) (*Tnode, *Tnode) {
 // Search search tree to found data associated with the provided key. If the tree is empty, returns ErrEmptyTree.
 // If not found, returns ErrNotExist.
 func (bt *BSTree) Search(key interface{}) (interface{}, error) {
-	bt.mux.Lock()
-	defer bt.mux.Unlock()
 	if bt.root == nil && bt.size == 0 {
 		return nil, container.ErrEmptyTree
 	}
@@ -134,9 +130,6 @@ func (bt *BSTree) Search(key interface{}) (interface{}, error) {
 // Delete deletes the data found by key. if tree is empty, Delete returns ErrEmptyTree,
 // if the data doesn't exist, it will return ErrNotExist.
 func (bt *BSTree) Delete(key interface{}) error {
-	bt.mux.Lock()
-	defer bt.mux.Unlock()
-
 	if bt.root == nil && bt.size == 0 {
 		return container.ErrEmptyTree
 	}
@@ -217,8 +210,6 @@ func findRightMostNode(ret *Tnode, parent *Tnode) (*Tnode, *Tnode) {
 
 // Update updates the value associated with key to val. If the tree is empty, returns ErrEmptyTree. If not found, returns ErrNotExist.
 func (bt *BSTree) Update(key interface{}, val interface{}) error {
-	bt.mux.Lock()
-	defer bt.mux.Unlock()
 	if bt.root == nil && bt.size == 0 {
 		return container.ErrEmptyTree
 	}
@@ -284,12 +275,12 @@ func levelTraversal(tn *Tnode, ch chan<- interface{}) {
 
 // Traversal traverses the tree using predefined traverse method, which specified by the predefined constants,
 // such as InorderTrav, PreorderTrav, PostorderTrav, LevelTrav.
-func (bt *BSTree) Traversal(TravType int) <-chan interface{} {
+func (bt *BSTree) Traversal(TravType TraversalType) <-chan interface{} {
 	ch := make(chan interface{})
+
 	go func() {
-		bt.mux.Lock()
-		defer bt.mux.Unlock()
 		defer close(ch)
+
 		if bt.root == nil && bt.size == 0 {
 			return
 		}
@@ -303,9 +294,6 @@ func (bt *BSTree) Traversal(TravType int) <-chan interface{} {
 			postorderTraversal(bt.root, ch)
 		case LevelTrav:
 			levelTraversal(bt.root, ch)
-		default:
-			close(ch)
-			return
 		}
 	}()
 
@@ -317,8 +305,6 @@ func (bt *BSTree) Traversal(TravType int) <-chan interface{} {
 func (bt *BSTree) TravWith(trave TravFunc) <-chan interface{} {
 	ch := make(chan interface{})
 	go func() {
-		bt.mux.Lock()
-		defer bt.mux.Unlock()
 		defer close(ch)
 		if bt.root == nil && bt.size == 0 {
 			return
@@ -331,26 +317,17 @@ func (bt *BSTree) TravWith(trave TravFunc) <-chan interface{} {
 
 // Size returns the size of the tree, which refers to the total number of nodes of tree.
 func (bt *BSTree) Size() int {
-	bt.mux.Lock()
-	defer bt.mux.Unlock()
-
 	return bt.size
 }
 
 // Clear empty the tree, it will drop all of data then becomes an empty tree.
 func (bt *BSTree) Clear() {
-	bt.mux.Lock()
-	defer bt.mux.Unlock()
-
 	bt.root = nil
 	bt.size = 0
 }
 
 // Empty returns true if the tree is empty tree, otherwise false.
 func (bt *BSTree) Empty() bool {
-	bt.mux.Lock()
-	defer bt.mux.Unlock()
-
 	return bt.root == nil && bt.size == 0
 }
 
@@ -372,8 +349,6 @@ func getHeight(tn *Tnode) int {
 // Height returns the height of tree, it also refers to the height of root, which is the number of edges
 // on the longest downward path between the root and a leaf. If return -1, it means that the tree is empty.
 func (bt *BSTree) Height() int {
-	bt.mux.Lock()
-	defer bt.mux.Unlock()
 	if bt.root == nil && bt.size == 0 {
 		return -1
 	}
@@ -384,8 +359,6 @@ func (bt *BSTree) Height() int {
 // HeightOf returns the height of specified node of tree, which is the largest number of edges in the
 // path from that node to leaf. If data can't be found using key, return -1 and ErrNotExist error.
 func (bt *BSTree) HeightOf(key interface{}) (int, error) {
-	bt.mux.Lock()
-	defer bt.mux.Unlock()
 	if bt.root == nil && bt.size == 0 {
 		return -1, container.ErrEmptyTree
 	}
@@ -424,8 +397,6 @@ func getDepth(from *Tnode, key interface{}) (int, error) {
 
 // Depth returns the depth of the tree, which is equal to the height of the tree.
 func (bt *BSTree) Depth() int {
-	bt.mux.Lock()
-	defer bt.mux.Unlock()
 	if bt.root == nil && bt.size == 0 {
 		return -1
 	}
@@ -436,8 +407,6 @@ func (bt *BSTree) Depth() int {
 // DepthOf returns the depth of data found by key in the tree, which is the number of
 // edges in the path from the root to that node.
 func (bt *BSTree) DepthOf(key interface{}) (int, error) {
-	bt.mux.Lock()
-	defer bt.mux.Unlock()
 	if bt.root == nil && bt.size == 0 {
 		return -1, container.ErrEmptyTree
 	}
@@ -448,9 +417,6 @@ func (bt *BSTree) DepthOf(key interface{}) (int, error) {
 // FullTree returns true if the tree is full tree, note that beacuse of property of
 // binary tree, a full tree is also a complete tree.
 func (bt *BSTree) FullTree() bool {
-	bt.mux.Lock()
-	defer bt.mux.Unlock()
-
 	h := getHeight(bt.root)
 	if bt.size == int(math.Pow(2, float64(h+1)))-1 {
 		return true

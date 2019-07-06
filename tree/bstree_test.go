@@ -237,8 +237,8 @@ func TestBSTreeTraversal(t *testing.T) {
 	defidx := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	bt, _ := createTree(defidx)
 
-	for i := tree.InorderTrav; i <= tree.LevelTrav; i++ {
-		ch := bt.Traversal(i)
+	for i := 0; i <= 3; i++ {
+		ch := bt.Traversal(tree.TraversalType(i))
 		go func(n int, ch <-chan interface{}) {
 			var j int
 			for itf := range ch {
