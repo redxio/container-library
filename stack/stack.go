@@ -1,4 +1,4 @@
-// Package stack implements a library for stack with thread safety.
+// Package stack implements a LIFO stack.
 package stack
 
 // Stack represents a LIFO stack implemented using dynamic array.

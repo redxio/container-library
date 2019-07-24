@@ -1,4 +1,4 @@
-// Package tree implements binary search tree related operations with thread safety
+// Package tree implements operations related to binary search tree
 package tree
 
 import (

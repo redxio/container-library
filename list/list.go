@@ -1,5 +1,5 @@
-// Package list implements singly linked list with thread safety, which supports
-// partially concurrent operations on list.
+// Package list implements singly linked list, which partially
+// supports concurrent operations on list.
 package list
 
 import (

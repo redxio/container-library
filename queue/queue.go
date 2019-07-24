@@ -1,4 +1,4 @@
-// Package queue implements queue-related operations with thread safety.
+// Package queue implements operations related to FIFO queue.
 package queue
 
 // Queue represents a FIFO queue implemented using dynamic array.
