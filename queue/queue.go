@@ -11,6 +11,11 @@ func NewQueue() *Queue {
 	return &Queue{}
 }
 
+// NewQueueSize returns a queue with initial size.
+func NewQueueSize(size int) *Queue {
+	return &Queue{make([]interface{}, size)}
+}
+
 // EnQueue enters data to the tail of the Queue.
 func (q *Queue) EnQueue(data ...interface{}) {
 	q.data = append(q.data, data...)

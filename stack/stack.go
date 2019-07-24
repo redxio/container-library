@@ -11,6 +11,11 @@ func NewStack() *Stack {
 	return &Stack{}
 }
 
+// NewStackSize returns a stack with initial size.
+func NewStackSize(size int) *Stack {
+	return &Stack{make([]interface{}, size)}
+}
+
 // Push pushed data into Stack.
 func (s *Stack) Push(data ...interface{}) {
 	s.data = append(s.data, data...)
