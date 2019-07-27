@@ -328,13 +328,13 @@ func (ll *LinkedList) Empty() bool {
 	return ll.head == nil && ll.size == 0
 }
 
-// Size returns the size of the linked list.
+// Size returns the size of list ll.
 func (ll *LinkedList) Size() int {
 	return ll.size
 }
 
-// Clear clears the linked list, it will drop all of data.
-func (ll *LinkedList) Clear() {
+// Reset resets list ll to its initial state, it will drop all of data.
+func (ll *LinkedList) Reset() {
 	ll.head = nil
 	ll.size = 0
 }

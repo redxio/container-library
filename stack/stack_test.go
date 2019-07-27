@@ -83,10 +83,10 @@ func TestStackPop(t *testing.T) {
 	}
 }
 
-func TestStackClear(t *testing.T) {
+func TestStackReset(t *testing.T) {
 	s := createStack()
 
-	s.Clear()
+	s.Reset()
 	v := s.Pop()
 	if v != nil {
 		t.Errorf("%v != nil", v)

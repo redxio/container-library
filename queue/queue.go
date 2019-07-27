@@ -37,8 +37,8 @@ func (q *Queue) Size() int {
 	return len(q.data)
 }
 
-// Clear clears all of data in the Queue.
-func (q *Queue) Clear() {
+// Reset drops all of data in queue q and back to its initial state
+func (q *Queue) Reset() {
 	q.data = nil
 }
 

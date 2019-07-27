@@ -39,10 +39,10 @@ func TestLStackPop(t *testing.T) {
 	}
 }
 
-func TestLStackClear(t *testing.T) {
+func TestLStackReset(t *testing.T) {
 	ls := createLStack()
 
-	ls.Clear()
+	ls.Reset()
 	v := ls.Pop()
 	if v != nil {
 		t.Errorf("%v != nil", v)

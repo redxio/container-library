@@ -268,10 +268,10 @@ func TestListSize(t *testing.T) {
 	}
 }
 
-func TestListClear(t *testing.T) {
+func TestListReset(t *testing.T) {
 	ri := r.Perm(len(testCase))
 	ll := createAndFillList(ri)
-	ll.Clear()
+	ll.Reset()
 	if !ll.Empty() || ll.Size() != 0 {
 		t.Errorf("%v or %v != 0", !ll.Empty(), ll.Size())
 	}

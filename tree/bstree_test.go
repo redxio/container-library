@@ -332,11 +332,11 @@ func TestBSTreeSize(t *testing.T) {
 	}
 }
 
-func TestBSTreeClear(t *testing.T) {
+func TestBSTreeReset(t *testing.T) {
 	ri := r.Perm(len(testCase))
 	bt, _ := createTree(ri)
 
-	bt.Clear()
+	bt.Reset()
 	if bt.Size() != 0 {
 		t.Errorf("%v != 0", bt.Size())
 	}
@@ -346,7 +346,7 @@ func TestBSTreeEmpty(t *testing.T) {
 	ri := r.Perm(len(testCase))
 	bt, _ := createTree(ri)
 
-	bt.Clear()
+	bt.Reset()
 	if bt.Empty() != true {
 		t.Errorf("%v != true", bt.Empty())
 	}

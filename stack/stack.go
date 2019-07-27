@@ -37,8 +37,8 @@ func (s *Stack) Size() int {
 	return len(s.data)
 }
 
-// Clear drops all of data in the Stack.
-func (s *Stack) Clear() {
+// Reset drops all of data in stack s and back to its initial state
+func (s *Stack) Reset() {
 	s.data = nil
 }
 

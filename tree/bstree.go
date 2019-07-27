@@ -320,8 +320,8 @@ func (bt *BSTree) Size() int {
 	return bt.size
 }
 
-// Clear empty the tree, it will drop all of data then becomes an empty tree.
-func (bt *BSTree) Clear() {
+// Reset drops all of data in the tree bt and back to its initial state.
+func (bt *BSTree) Reset() {
 	bt.root = nil
 	bt.size = 0
 }

@@ -47,8 +47,8 @@ func (ls *LStack) Size() int {
 	return ls.size
 }
 
-// Clear drops all of the data in the LinkedStack.
-func (ls *LStack) Clear() {
+// Reset drops all of data in LinkedStack ls and back to its initial state.
+func (ls *LStack) Reset() {
 	ls.head = nil
 	ls.size = 0
 }

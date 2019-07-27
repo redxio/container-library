@@ -59,8 +59,8 @@ func (lq *LQueue) Size() int {
 	return lq.size
 }
 
-// Clear clears the LQueue, it will drop all data.
-func (lq *LQueue) Clear() {
+// Reset clears all of data in queue lq and back to its initial state
+func (lq *LQueue) Reset() {
 	lq.head = nil
 	lq.tail = nil
 	lq.size = 0

@@ -78,10 +78,10 @@ func TestLeQueue(t *testing.T) {
 	}
 }
 
-func TestClear(t *testing.T) {
+func TestReset(t *testing.T) {
 	q := createQueue()
 
-	q.Clear()
+	q.Reset()
 	lv := q.LeQueue()
 	if lv != nil {
 		t.Errorf("%v != nil", lv)
