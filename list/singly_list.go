@@ -3,7 +3,6 @@
 package list
 
 import (
-	"runtime"
 	"sync"
 
 	"github.com/NzKSO/container"
@@ -25,10 +24,12 @@ func (pnode *Node) GetData() interface{} {
 	return pnode.data
 }
 
-// LinkedList represents a singly linked list.
-type LinkedList struct {
-	head *Node
-	size int
+// SinglyList represents a singly linked list.
+type SinglyList struct {
+	sync.RWMutex
+	head            *Node
+	size            int
+	NumPerGoroutine int // specify every how many nodes of list start a goroutine
 }
 
 type findResult struct {
@@ -36,34 +37,19 @@ type findResult struct {
 }
 
 type splitResult struct {
-	beforeHead, head, tail *Node
+	prev, head, tail *Node
 }
-
-// LList is alias for LinkedList.
-type LList = LinkedList
 
 // SortFunc represents the type of sorting method implemented by the user.
 type SortFunc func(head *Node, size ...int)
 
-var (
-	// SizOfSublst represents that every how much size of list start a goroutine. -1 is default values.
-	SizOfSublst = -1
-
-	// SetSizOfSublst is used to set the size of the child linked list according to the length of the linked list
-	SetSizOfSublst func(size int) int
-
-	nCPUs = runtime.NumCPU()
-
-	rw sync.RWMutex
-)
-
-// NewLinkedList returns a pointer to linked list.
-func NewLinkedList() *LinkedList {
-	return &LinkedList{}
+// NewSinglyList returns a pointer to linked list.
+func NewSinglyList() *SinglyList {
+	return &SinglyList{}
 }
 
 // Insert inserts data into linked list.
-func (ll *LinkedList) Insert(data container.Interface) {
+func (ll *SinglyList) Insert(data container.Interface) {
 	newNode := new(Node)
 	newNode.data = data
 	newNode.next = ll.head
@@ -71,75 +57,59 @@ func (ll *LinkedList) Insert(data container.Interface) {
 	ll.size++
 }
 
-func getSizOfSublst(size int) int {
-	var sizofsublst int
-	if SetSizOfSublst != nil {
-		if sizofsublst = SetSizOfSublst(size); sizofsublst < 0 {
-			panic("Negative number")
-		} else if sizofsublst == 0 {
-			sizofsublst = size
-		}
-	} else if SizOfSublst > 0 {
-		sizofsublst = SizOfSublst
-	} else if SizOfSublst == 0 {
-		sizofsublst = size
-	} else if sizofsublst = size / nCPUs; size <= nCPUs {
-		sizofsublst = size
-	}
-	return sizofsublst
-}
-
-func splitList(ll *LinkedList, sizofsublst int) <-chan *splitResult {
-	nGoroutines := ll.size / sizofsublst
-	if ll.size < sizofsublst {
-		nGoroutines++
-	} else {
-		rest := ll.size % sizofsublst
-		if rest >= 6 {
-			nGoroutines++
-		}
-	}
-	ch := make(chan *splitResult, nGoroutines)
+func (ll *SinglyList) splitList() <-chan *splitResult {
+	ch := make(chan *splitResult)
 
 	go func() {
 		defer close(ch)
-		var beforeHead *Node
-		head := ll.head
-		tail := ll.head
-		ct := 0
 
-		for i := 0; i < nGoroutines; i++ {
-			for ct < sizofsublst-1 && tail.next != nil {
-				tail = tail.next
-				ct++
-			}
-			if i == nGoroutines-1 {
-				for tail.next != nil {
-					tail = tail.next
+		if ll.NumPerGoroutine <= 0 || ll.NumPerGoroutine >= ll.size || ((ll.size - ll.NumPerGoroutine) < (ll.NumPerGoroutine / 3)) {
+			ch <- &splitResult{nil, ll.head, nil}
+			return
+		}
+
+		move, head := ll.head, ll.head
+
+		var (
+			prev *Node
+			ct   int
+		)
+
+		for move != nil {
+			result := splitResult{}
+
+			for size := 1; size < ll.NumPerGoroutine && move.next != nil; size++ {
+				move = move.next
+				if (ll.size - ct) < (ll.NumPerGoroutine / 3) {
+					for move.next != nil {
+						move = move.next
+					}
 				}
-				ch <- &splitResult{beforeHead, head, tail}
-				break
 			}
-			ch <- &splitResult{beforeHead, head, tail}
-			beforeHead = tail
-			rw.RLock()
-			head = tail.next
-			rw.RUnlock()
-			tail = head
-			ct = 0
+			ct += ll.NumPerGoroutine
+
+			result.head = head
+			result.tail = move.next
+			result.prev = prev
+
+			prev = move
+			move = move.next
+			head = move
+
+			ch <- &result
 		}
 	}()
+
 	return ch
 }
 
 // Delete deletes data specified by key from linked list.
-func (ll *LinkedList) Delete(key interface{}) error {
+func (ll *SinglyList) Delete(key interface{}) error {
 	if ll.size == 0 && ll.head == nil {
 		return container.ErrEmptyList
 	}
 
-	splitCh := splitList(ll, getSizOfSublst(ll.size))
-	res := multiGoroutinesFind(ll.head, splitCh, key)
+	res := ll.multiGoroutinesFind(ll.splitList(), key)
 
 	if res != nil {
 		if res.prev == nil {
@@ -147,9 +117,9 @@ func (ll *LinkedList) Delete(key interface{}) error {
 			ll.size--
 			return nil
 		}
-		rw.Lock()
+		ll.Lock()
 		res.prev.next = res.find.next
-		rw.Unlock()
+		ll.Unlock()
 		ll.size--
 		return nil
 	}
@@ -157,13 +127,12 @@ func (ll *LinkedList) Delete(key interface{}) error {
 }
 
 // Search searches data associated with key by lanuching multiple goroutines
-func (ll *LinkedList) Search(key interface{}) (interface{}, error) {
+func (ll *SinglyList) Search(key interface{}) (interface{}, error) {
 	if ll.head == nil && ll.size == 0 {
 		return nil, container.ErrEmptyList
 	}
 
-	splitCh := splitList(ll, getSizOfSublst(ll.size))
-	res := multiGoroutinesFind(ll.head, splitCh, key)
+	res := ll.multiGoroutinesFind(ll.splitList(), key)
 
 	if res != nil {
 		return res.find.data, nil
@@ -171,26 +140,32 @@ func (ll *LinkedList) Search(key interface{}) (interface{}, error) {
 	return nil, container.ErrNotExist
 }
 
-func multiGoroutinesFind(head *Node, splitCh <-chan *splitResult, key interface{}) *findResult {
+func (ll *SinglyList) multiGoroutinesFind(splitCh <-chan *splitResult, key interface{}) *findResult {
 	findResCh := make(chan *findResult)
 	termGoroutineCh := make(chan struct{}, 1)
+
 	var wg sync.WaitGroup
 
 	for split := range splitCh {
 		wg.Add(1)
 		go func(split *splitResult) {
 			defer wg.Done()
+
 			walk := split.head
-			var prev *Node
-			rw.RLock()
-			end := split.tail.next
-			rw.RUnlock()
+			ll.RLock()
+			end := split.tail
+			ll.RUnlock()
+
+			var (
+				prev *Node
+				itf  container.Interface
+			)
 
 			for walk != end {
-				itf := walk.data.(container.Interface)
+				itf = walk.data.(container.Interface)
 				if itf.Find(key) {
 					if walk == split.head {
-						findResCh <- &findResult{split.beforeHead, walk}
+						findResCh <- &findResult{split.prev, walk}
 						return
 					}
 					findResCh <- &findResult{prev, walk}
@@ -201,9 +176,9 @@ func multiGoroutinesFind(head *Node, splitCh <-chan *splitResult, key interface{
 					return
 				default:
 					prev = walk
-					rw.RLock()
+					ll.RLock()
 					walk = walk.next
-					rw.RUnlock()
+					ll.RUnlock()
 				}
 			}
 		}(split)
@@ -225,13 +200,12 @@ func multiGoroutinesFind(head *Node, splitCh <-chan *splitResult, key interface{
 }
 
 // Update updates data associated with key in linked list.
-func (ll *LinkedList) Update(key interface{}, val interface{}) error {
+func (ll *SinglyList) Update(key interface{}, val interface{}) error {
 	if ll.head == nil && ll.size == 0 {
 		return container.ErrEmptyList
 	}
 
-	splitCh := splitList(ll, getSizOfSublst(ll.size))
-	res := multiGoroutinesFind(ll.head, splitCh, key)
+	res := ll.multiGoroutinesFind(ll.splitList(), key)
 	if res.find != nil {
 		itf := res.find.data.(container.Interface)
 		itf.Set(val)
@@ -241,9 +215,9 @@ func (ll *LinkedList) Update(key interface{}, val interface{}) error {
 	return container.ErrNotExist
 }
 
-// Traversal returns a received only channel which can be used to receive results
+// Traversal returns a received only channel, which can be used to receive results
 // that returned by traversing linked list.
-func (ll *LinkedList) Traversal() <-chan interface{} {
+func (ll *SinglyList) Traversal() <-chan interface{} {
 	ch := make(chan interface{}, ll.size)
 	go func() {
 		defer close(ch)
@@ -262,53 +236,53 @@ func (ll *LinkedList) Traversal() <-chan interface{} {
 	return ch
 }
 
-func reverse(split *splitResult, ln **Node, wg *sync.WaitGroup) {
+func (ll *SinglyList) reverse(split *splitResult, wg *sync.WaitGroup) {
 	defer wg.Done()
-	move := split.head
-	prev := split.beforeHead
-	last := split.tail.next
 
-	if last == nil {
-		*ln = split.tail
-	}
-	for move != last {
-		temp := move.next
-		rw.Lock()
+	move := split.head
+	prev := split.prev
+	var temp *Node
+
+	for move != split.tail {
+		temp = move.next
+		ll.Lock()
 		move.next = prev
-		rw.Unlock()
+		ll.Unlock()
 		prev = move
 		move = temp
 	}
+
+	if split.tail == nil {
+		ll.head = prev
+	}
 }
 
-// Reverse reverses the linked list concurrently.
-func (ll *LinkedList) Reverse() {
+// Reverse reverses the list concurrently.
+func (ll *SinglyList) Reverse() {
 	if ll.head == nil || ll.head.next == nil {
 		return
 	}
 
 	var wg sync.WaitGroup
-	splitSize := getSizOfSublst(ll.size)
-	splitCh := splitList(ll, splitSize)
-	for split := range splitCh {
+	for split := range ll.splitList() {
 		wg.Add(1)
-		go reverse(split, &ll.head, &wg)
+		go ll.reverse(split, &wg)
 	}
 	wg.Wait()
 }
 
-// Empty returns true if the linked list is empty, otherwise false.
-func (ll *LinkedList) Empty() bool {
+// Empty returns true if the list is empty, otherwise false.
+func (ll *SinglyList) Empty() bool {
 	return ll.head == nil && ll.size == 0
 }
 
 // Size returns the size of list ll.
-func (ll *LinkedList) Size() int {
+func (ll *SinglyList) Size() int {
 	return ll.size
 }
 
-// Reset resets list ll to its initial state, it will drop all of data.
-func (ll *LinkedList) Reset() {
+// Reset resets ll to its initial state, it will drop all of data.
+func (ll *SinglyList) Reset() {
 	ll.head = nil
 	ll.size = 0
 }
@@ -317,6 +291,7 @@ func (ll *LinkedList) Reset() {
 func BubbleSort(head *Node) {
 	var end *Node
 	var start = head
+
 	for start != end {
 		for start.next != end {
 			itf := start.data.(container.Lesser)
@@ -346,8 +321,8 @@ func BubbleSort(head *Node) {
 	}*/
 }
 
-// Sort sorts the linked list, using merge sorting by default
-func (ll *LinkedList) Sort() {
+// Sort sorts the list using merge sorting by default
+func (ll *SinglyList) Sort() {
 	if ll.head == nil || ll.head.next == nil {
 		return
 	}
@@ -355,8 +330,7 @@ func (ll *LinkedList) Sort() {
 }
 
 func getMiddleNode(head *Node) *Node {
-	slow := head
-	fast := head
+	slow, fast := head, head
 
 	for fast.next != nil && fast.next.next != nil {
 		slow = slow.next
@@ -407,11 +381,13 @@ func mergeList(front, back *Node) *Node {
 
 // InsertionSort represents insertion sorting, which can be used as parameter to method SortWith.
 func InsertionSort(phead **Node) {
-	var sorted *Node
-	var current = *phead
+	var (
+		sorted, next *Node
+		current      = *phead
+	)
 
 	for current != nil {
-		next := current.next
+		next = current.next
 		sortedInsert(&sorted, current)
 		current = next
 	}
@@ -433,8 +409,8 @@ func sortedInsert(phead **Node, newNode *Node) {
 	}
 }
 
-// SortWith sorts the linked list using user defined sorting method.
-func (ll *LinkedList) SortWith(sort SortFunc) {
+// SortWith sorts the list using user defined sorting method.
+func (ll *SinglyList) SortWith(sort SortFunc) {
 	if ll.head == nil || ll.head.next == nil {
 		return
 	}

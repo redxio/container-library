@@ -119,8 +119,8 @@ func (c *corp) Find(key interface{}) bool {
 	}
 }
 
-func createAndFillList(ri []int) *list.LinkedList {
-	ll := list.NewLinkedList()
+func createAndFillList(ri []int) *list.SinglyList {
+	ll := list.NewSinglyList()
 	for _, iv := range ri {
 		ll.Insert(&testCase[iv])
 	}
@@ -142,7 +142,9 @@ func TestListInsert(t *testing.T) {
 
 func TestListDelete(t *testing.T) {
 	ri := r.Perm(len(testCase))
-	ll := list.NewLinkedList()
+	ll := list.NewSinglyList()
+	ll.NumPerGoroutine = 10
+
 	if err := ll.Delete(testCase[r.Intn(len(testCase))].id); err != container.ErrEmptyList {
 		t.Errorf("%v != %v", err, container.ErrEmptyList)
 	}
@@ -160,7 +162,9 @@ func TestListDelete(t *testing.T) {
 
 func TestListSearch(t *testing.T) {
 	ri := r.Perm(len(testCase))
-	ll := list.NewLinkedList()
+	ll := list.NewSinglyList()
+	ll.NumPerGoroutine = 9
+
 	itf, err := ll.Search(testCase[r.Intn(len(testCase))].id)
 	if itf != nil || err != container.ErrEmptyList {
 		t.Errorf("%v != nil or %v != %v", itf, err, container.ErrEmptyList)
@@ -181,6 +185,8 @@ func TestListSearch(t *testing.T) {
 func TestListUpdate(t *testing.T) {
 	ri := r.Perm(len(testCase))
 	ll := createAndFillList(ri)
+	ll.NumPerGoroutine = 11
+
 	for _, iv := range ri {
 		testStr := strings.ToUpper(testCase[iv].company)
 		key := testCase[iv].id
@@ -208,6 +214,8 @@ func TestListTraversal(t *testing.T) {
 func TestListReverse(t *testing.T) {
 	ri := r.Perm(len(testCase))
 	ll := createAndFillList(ri)
+	ll.NumPerGoroutine = 12
+
 	ll.Reverse()
 	ch := ll.Traversal()
 	i := 0
@@ -221,7 +229,7 @@ func TestListReverse(t *testing.T) {
 
 func TestListEmpty(t *testing.T) {
 	ri := r.Perm(len(testCase))
-	ll := list.NewLinkedList()
+	ll := list.NewSinglyList()
 	if !ll.Empty() {
 		t.Errorf("List is empty? %v", ll.Empty())
 	}
@@ -244,7 +252,7 @@ func TestListEmpty(t *testing.T) {
 }
 
 func TestListSize(t *testing.T) {
-	ll := list.NewLinkedList()
+	ll := list.NewSinglyList()
 	if ll.Size() != 0 {
 		t.Errorf("%v != 0", ll.Size())
 	}
