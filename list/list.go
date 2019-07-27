@@ -224,32 +224,6 @@ func multiGoroutinesFind(head *Node, splitCh <-chan *splitResult, key interface{
 	}
 }
 
-func findSubList(split *splitResult, key interface{}, findResCh chan *findResult, terminatedCh chan struct{}, wg *sync.WaitGroup) {
-	defer wg.Done()
-	walk := split.head
-	end := split.tail.next
-	var prev *Node
-
-	for walk != end {
-		itf := walk.data.(container.Interface)
-		if itf.Find(key) {
-			if walk == split.head {
-				findResCh <- &findResult{split.beforeHead, walk}
-				return
-			}
-			findResCh <- &findResult{prev, walk}
-			return
-		}
-		select {
-		case <-terminatedCh:
-			return
-		default:
-			prev = walk
-			walk = walk.next
-		}
-	}
-}
-
 // Update updates data associated with key in linked list.
 func (ll *LinkedList) Update(key interface{}, val interface{}) error {
 	if ll.head == nil && ll.size == 0 {
