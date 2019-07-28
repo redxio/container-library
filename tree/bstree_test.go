@@ -8,15 +8,11 @@ import (
 
 	"github.com/NzKSO/container"
 	"github.com/NzKSO/container/queue"
+	"github.com/NzKSO/container/testdata"
 	"github.com/NzKSO/container/tree"
 )
 
-type corp struct {
-	id      int
-	company string
-}
-
-var testCase = []corp{
+var testCase = []testdata.Corp{
 	{5, "Netflix"},   // 0
 	{3, "Google"},    // 1
 	{7, "Intel"},     // 2
@@ -28,69 +24,6 @@ var testCase = []corp{
 	{6, "IBM"},       // 8
 	{1, "Microsoft"}, // 9
 	{8, "Samsung"},   // 10
-}
-
-func (c *corp) Set(i interface{}) {
-	v, ok := i.(string)
-	if !ok {
-		return
-	}
-	c.company = v
-}
-
-func (c *corp) Less(kv interface{}) bool {
-	switch v := kv.(type) {
-	case corp:
-		if c.id <= v.id {
-			return true
-		}
-		return false
-	case *corp:
-		if c.id <= (*v).id {
-			return true
-		}
-		return false
-	case int:
-		if c.id <= v {
-			return true
-		}
-		return false
-	case *int:
-		if c.id <= *v {
-			return true
-		}
-		return false
-	}
-	return false
-}
-
-func (c *corp) Find(key interface{}) bool {
-	switch v := key.(type) {
-	// make no sense, used for testing purpose only
-	case corp:
-		if c.id == v.id {
-			return true
-		}
-		return false
-	// comment same as above
-	case *corp:
-		if c.id == v.id {
-			return true
-		}
-		return false
-	case int:
-		if c.id == v {
-			return true
-		}
-		return false
-	case *int:
-		if c.id == *v {
-			return true
-		}
-		return false
-	default:
-		return false
-	}
 }
 
 var (
@@ -141,9 +74,11 @@ func TestBSTreeSearch(t *testing.T) {
 	bt, err := createTree(ri)
 
 	for _, iv := range ri {
-		itf, err := bt.Search(testCase[iv].id)
-		pval, ok := itf.(*corp)
-		t.Log(pval, ok)
+		itf, err := bt.Search(testCase[iv].ID)
+		pval, ok := itf.(*testdata.Corp)
+		if !ok {
+			t.Errorf("ok is %v", ok)
+		}
 		if *pval != testCase[iv] || err == container.ErrNotExist {
 			t.Errorf("(%v != %v) or (%v == %v)", *pval, testCase[iv],
 				err, container.ErrNotExist)
@@ -151,9 +86,11 @@ func TestBSTreeSearch(t *testing.T) {
 	}
 
 	for _, iv := range ri {
-		itf, err := bt.Search(&testCase[iv].id)
-		pval, ok := itf.(*corp)
-		t.Log(pval, ok)
+		itf, err := bt.Search(&testCase[iv].ID)
+		pval, ok := itf.(*testdata.Corp)
+		if !ok {
+			t.Errorf("ok is %v", ok)
+		}
 		if *pval != testCase[iv] || err == container.ErrNotExist {
 			t.Errorf("(%v != %v) or (%v == %v)", itf, testCase[iv],
 				err, container.ErrNotExist)
@@ -163,7 +100,7 @@ func TestBSTreeSearch(t *testing.T) {
 	i := r.Intn(len(testCase))
 	// make no sense, used for testing purpose only
 	inf, err := bt.Search(testCase[i])
-	pval := inf.(*corp)
+	pval := inf.(*testdata.Corp)
 	if *pval != testCase[i] || err == container.ErrNotExist {
 		t.Errorf("(%v != %v) or (%v == %v)", inf, testCase[i],
 			err, container.ErrNotExist)
@@ -172,7 +109,7 @@ func TestBSTreeSearch(t *testing.T) {
 	// comment same as above
 	i = r.Intn(len(testCase))
 	inf, err = bt.Search(&testCase[i])
-	pval = inf.(*corp)
+	pval = inf.(*testdata.Corp)
 	if *pval != testCase[i] || err == container.ErrNotExist {
 		t.Errorf("(%v != %v) or (%v == %v)", inf, testCase[i],
 			err, container.ErrNotExist)
@@ -189,7 +126,6 @@ func TestBSTreeSearch(t *testing.T) {
 func TestBSTreeDelete(t *testing.T) {
 
 	ri := r.Perm(len(testCase))
-	t.Log("ri:", ri)
 
 	bt, err := createTree(ri)
 	if err != nil {
@@ -197,14 +133,13 @@ func TestBSTreeDelete(t *testing.T) {
 	}
 
 	ri = r.Perm(len(testCase))
-	t.Log("ri:", ri)
 	for _, iv := range ri {
-		err := bt.Delete(testCase[iv].id)
+		err := bt.Delete(testCase[iv].ID)
 		if err != nil {
-			t.Errorf("%v != nil", testCase[iv].id)
+			t.Errorf("%v != nil", testCase[iv].ID)
 		}
 
-		ret, err := bt.Search(testCase[iv].id)
+		ret, err := bt.Search(testCase[iv].ID)
 		if ret != nil || err == nil {
 			t.Errorf("(%v != nil) or (%v != %v)", ret, err, nil)
 		}
@@ -217,18 +152,23 @@ func TestBSTreeUpdate(t *testing.T) {
 
 	for _, iv := range ri {
 		before, _ := bt.Search(iv)
-		v, ok := before.(*corp)
-		t.Log(v.company, ok)
-		newStr := strings.ToUpper(v.company)
+		v, ok := before.(*testdata.Corp)
+		if !ok {
+			t.Errorf("ok is %v", ok)
+		}
+
+		newStr := strings.ToUpper(v.Name)
 
 		bt.Update(iv, newStr)
 
 		after, _ := bt.Search(iv)
-		v, ok = after.(*corp)
-		t.Log(v.company, ok)
+		v, ok = after.(*testdata.Corp)
+		if !ok {
+			t.Errorf("ok is %v", ok)
+		}
 
-		if v.company != newStr {
-			t.Errorf("%v != %v", v.company, newStr)
+		if v.Name != newStr {
+			t.Errorf("%v != %v", v.Name, newStr)
 		}
 	}
 }
@@ -242,8 +182,10 @@ func TestBSTreeTraversal(t *testing.T) {
 		go func(n int, ch <-chan interface{}) {
 			var j int
 			for itf := range ch {
-				pn, ok := itf.(*corp)
-				t.Log(pn, ok)
+				pn, ok := itf.(*testdata.Corp)
+				if !ok {
+					t.Errorf("ok is %v", ok)
+				}
 				if *pn != testCase[index[n][j]] {
 					t.Errorf("%v != %v", *pn, testCase[index[n][j]])
 				}
@@ -283,8 +225,10 @@ func TestBSTreeTravWith(t *testing.T) {
 	ch := bt.TravWith(tree.TravFunc(levelTraversal))
 	var next int
 	for itf := range ch {
-		pn, ok := itf.(*corp)
-		t.Log(pn, ok)
+		pn, ok := itf.(*testdata.Corp)
+		if !ok {
+			t.Errorf("ok is %v", ok)
+		}
 		if *pn != testCase[index[3][next]] {
 			t.Errorf("%v != %v", *pn, index[3][next])
 		}
@@ -305,8 +249,10 @@ func TestBSTreeTravWith(t *testing.T) {
 	next = 0
 	ch = bt.TravWith(inorderTraversal)
 	for itf := range ch {
-		pn, ok := itf.(*corp)
-		t.Log(pn, ok)
+		pn, ok := itf.(*testdata.Corp)
+		if !ok {
+			t.Errorf("ok is %v", ok)
+		}
 		if *pn != testCase[index[0][next]] {
 			t.Errorf("%v != %v", *pn, index[0][next])
 		}
@@ -324,7 +270,7 @@ func TestBSTreeSize(t *testing.T) {
 
 	var c int = 1
 	for _, iv := range ri {
-		err := bt.Delete(testCase[iv].id)
+		err := bt.Delete(testCase[iv].ID)
 		if err != nil || bt.Size() != len(testCase)-c {
 			t.Errorf("(err != %v) or (%v != %v)", err, bt.Size(), len(testCase)-c)
 		}
@@ -457,28 +403,21 @@ func TestBSTreeCompare(t *testing.T) {
 
 	ri1 := r.Perm(len(testCase))
 	ri2 := r.Perm(len(testCase))
-	t.Logf("ri1: %v\n", ri1)
-	t.Logf("ri2: %v\n", ri2)
 
 	id := make([]int, len(testCase))
 	//ri2 = ri2[:len(ri2)-3]
 	for i, v := range ri1 {
-		id[i] = testCase[v].id
+		id[i] = testCase[v].ID
 	}
-	t.Logf("id: %v\n", id)
 
 	for i, v := range ri2 {
-		id[i] = testCase[v].id
+		id[i] = testCase[v].ID
 	}
-	t.Logf("id: %v\n", id)
-
-	t.Log(compareIntSlice(ri1, ri2))
 
 	bt1, _ = createTree(ri1)
 	bt2, _ = createTree(ri2)
 
 	same = tree.Compare(bt1, bt2)
-	t.Log(same)
 
 	if compareIntSlice(ri1, ri2) && !same {
 		t.Errorf("Two trees is the same but return false")

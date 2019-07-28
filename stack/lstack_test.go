@@ -4,11 +4,12 @@ import (
 	"testing"
 
 	"github.com/NzKSO/container/stack"
+	"github.com/NzKSO/container/testdata"
 )
 
 func createLStack() *stack.LStack {
 	ls := stack.NewLStack()
-	for _, v := range testCase {
+	for _, v := range testdata.TestCases {
 		ls.Push(v)
 	}
 
@@ -18,18 +19,18 @@ func createLStack() *stack.LStack {
 func TestLStackPush(t *testing.T) {
 	ls := createLStack()
 
-	if ls.Size() != len(testCase) {
-		t.Errorf("%v != %v", ls.Size(), len(testCase))
+	if ls.Size() != len(testdata.TestCases) {
+		t.Errorf("%v != %v", ls.Size(), len(testdata.TestCases))
 	}
 }
 
 func TestLStackPop(t *testing.T) {
 	ls := createLStack()
 
-	for i := len(testCase) - 1; i >= 0; i-- {
+	for i := len(testdata.TestCases) - 1; i >= 0; i-- {
 		v := ls.Pop()
-		if v != testCase[i] {
-			t.Errorf("%v != %v", v, testCase[i])
+		if v != testdata.TestCases[i] {
+			t.Errorf("%v != %v", v, testdata.TestCases[i])
 		}
 	}
 

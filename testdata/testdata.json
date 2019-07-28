@@ -1,0 +1,146 @@
+[
+    {
+        "id": 22,
+        "name": "General Electric"
+    },
+    {
+        "id": 19,
+        "name": "Siemens"
+    },
+    {
+        "id": 2,
+        "name": "Alphabet"
+    },
+    {
+        "id": 6,
+        "name": "Softbank"
+    },
+    {
+        "id": 30,
+        "name": "Wells Fargo"
+    },
+    {
+        "id": 7,
+        "name": "Intel"
+    },
+    {
+        "id": 33,
+        "name": "Morgan Stanley"
+    },
+    {
+        "id": 23,
+        "name": "Amazon"
+    },
+    {
+        "id": 17,
+        "name": "Goldman Sachs Group"
+    },
+    {
+        "id": 29,
+        "name": "Dell"
+    },
+    {
+        "id": 11,
+        "name": "Facebook"
+    },
+    {
+        "id": 24,
+        "name": "Coca-Cola"
+    },
+    {
+        "id": 12,
+        "name": "Qualcomm"
+    },
+    {
+        "id": 32,
+        "name": "Verizon Communications"
+    },
+    {
+        "id": 28,
+        "name": "Apple"
+    },
+    {
+        "id": 3,
+        "name": "IBM"
+    },
+    {
+        "id": 0,
+        "name": "Microsoft"
+    },
+    {
+        "id": 18,
+        "name": "Samsung Electronics"
+    },
+    {
+        "id": 8,
+        "name": "Booking"
+    },
+    {
+        "id": 1,
+        "name": "Twitter"
+    },
+    {
+        "id": 13,
+        "name": "Berkshire Hathaway"
+    },
+    {
+        "id": 35,
+        "name": "JPMorgan Chase"
+    },
+    {
+        "id": 31,
+        "name": "Bank of America"
+    },
+    {
+        "id": 14,
+        "name": "Netflix"
+    },
+    {
+        "id": 5,
+        "name": "Toyota Motor"
+    },
+    {
+        "id": 21,
+        "name": "AT&T"
+    },
+    {
+        "id": 27,
+        "name": "Citigroup"
+    },
+    {
+        "id": 9,
+        "name": "Wal-Mart Stores"
+    },
+    {
+        "id": 16,
+        "name": "Uber"
+    },
+    {
+        "id": 20,
+        "name": "Royal Dutch Shell"
+    },
+    {
+        "id": 34,
+        "name": "Comcast"
+    },
+    {
+        "id": 4,
+        "name": "Cisco Systems"
+    },
+    {
+        "id": 26,
+        "name": "Walt Disney"
+    },
+    {
+        "id": 15,
+        "name": "Oracle"
+    },
+    {
+        "id": 10,
+        "name": "Boeing"
+    },
+    {
+        "id": 25,
+        "name": "HP"
+    }
+]
