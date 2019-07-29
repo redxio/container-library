@@ -13,7 +13,7 @@ type dqItem struct {
 
 // DelayQueue represents a delay queue
 type DelayQueue struct {
-	sync.RWMutex
+	rw        sync.RWMutex
 	queue     *list.List
 	size      int
 	semaphore chan bool
@@ -25,9 +25,9 @@ type TravFunc func(interface{})
 
 func (dq *DelayQueue) delayService() {
 	for {
-		dq.Lock()
+		dq.rw.Lock()
 		if dq.queue.Len() == 0 {
-			dq.Unlock()
+			dq.rw.Unlock()
 			<-dq.semaphore
 			continue
 		}
@@ -37,7 +37,7 @@ func (dq *DelayQueue) delayService() {
 		now := time.Now()
 
 		if time.Now().Before(item.expire) {
-			dq.Unlock()
+			dq.rw.Unlock()
 			time.Sleep(item.expire.Sub(now))
 			continue
 		}
@@ -47,7 +47,7 @@ func (dq *DelayQueue) delayService() {
 		}
 		dq.queue.Remove(elem)
 
-		dq.Unlock()
+		dq.rw.Unlock()
 	}
 }
 
@@ -70,15 +70,15 @@ func (dq *DelayQueue) EnQueue(data interface{}, delay int64) {
 	}
 
 	if dq.queue.Len() == 0 {
-		dq.Lock()
+		dq.rw.Lock()
 		dq.queue.PushBack(&dqItem{data, expireTime})
-		dq.Unlock()
+		dq.rw.Unlock()
 
 		dq.semaphore <- true
 		return
 	}
 
-	dq.Lock()
+	dq.rw.Lock()
 	elem := dq.queue.Back()
 	var mark *list.Element
 	for elem != nil && expireTime.Before(elem.Value.(*dqItem).expire) {
@@ -90,7 +90,7 @@ func (dq *DelayQueue) EnQueue(data interface{}, delay int64) {
 	} else {
 		dq.queue.InsertBefore(&dqItem{data, expireTime}, mark)
 	}
-	dq.Unlock()
+	dq.rw.Unlock()
 }
 
 // Receive returns a received only channel, which can be used for receiving something left from queue
@@ -106,8 +106,8 @@ func (dq *DelayQueue) Trav() <-chan interface{} {
 	ch := make(chan interface{})
 
 	go func() {
-		dq.RLock()
-		defer dq.RUnlock()
+		dq.rw.RLock()
+		defer dq.rw.RUnlock()
 		defer close(ch)
 
 		for elem := dq.queue.Front(); elem != nil; elem = elem.Next() {
@@ -121,8 +121,8 @@ func (dq *DelayQueue) Trav() <-chan interface{} {
 
 // TravWithFunc traverses delay queue dq with function f
 func (dq *DelayQueue) TravWithFunc(f TravFunc) {
-	dq.RLock()
-	defer dq.RUnlock()
+	dq.rw.RLock()
+	defer dq.rw.RUnlock()
 
 	if f == nil {
 		return
