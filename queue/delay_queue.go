@@ -69,28 +69,27 @@ func (dq *DelayQueue) EnQueue(data interface{}, delay int64) {
 		return
 	}
 
-	if dq.queue.Len() == 0 {
-		dq.rw.Lock()
-		dq.queue.PushBack(&dqItem{data, expireTime})
-		dq.rw.Unlock()
-
-		dq.semaphore <- true
-		return
-	}
-
 	dq.rw.Lock()
+
 	elem := dq.queue.Back()
 	var mark *list.Element
+
 	for elem != nil && expireTime.Before(elem.Value.(*dqItem).expire) {
 		mark = elem
 		elem = elem.Prev()
 	}
+
 	if mark == nil {
 		dq.queue.PushBack(&dqItem{data, expireTime})
 	} else {
 		dq.queue.InsertBefore(&dqItem{data, expireTime}, mark)
 	}
+
 	dq.rw.Unlock()
+
+	if dq.queue.Len() == 1 {
+		dq.semaphore <- true
+	}
 }
 
 // Receive returns a received only channel, which can be used for receiving something left from queue
