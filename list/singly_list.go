@@ -26,7 +26,7 @@ func (pnode *Node) GetData() interface{} {
 
 // SinglyList represents a singly linked list.
 type SinglyList struct {
-	sync.RWMutex
+	rw              sync.RWMutex
 	head            *Node
 	size            int
 	NumPerGoroutine int // specify every how many nodes of list start a goroutine
@@ -117,9 +117,9 @@ func (ll *SinglyList) Delete(key interface{}) error {
 			ll.size--
 			return nil
 		}
-		ll.Lock()
+		ll.rw.Lock()
 		res.prev.next = res.find.next
-		ll.Unlock()
+		ll.rw.Unlock()
 		ll.size--
 		return nil
 	}
@@ -152,9 +152,9 @@ func (ll *SinglyList) multiGoroutinesFind(splitCh <-chan *splitResult, key inter
 			defer wg.Done()
 
 			walk := split.head
-			ll.RLock()
+			ll.rw.RLock()
 			end := split.tail
-			ll.RUnlock()
+			ll.rw.RUnlock()
 
 			var (
 				prev *Node
@@ -176,9 +176,9 @@ func (ll *SinglyList) multiGoroutinesFind(splitCh <-chan *splitResult, key inter
 					return
 				default:
 					prev = walk
-					ll.RLock()
+					ll.rw.RLock()
 					walk = walk.next
-					ll.RUnlock()
+					ll.rw.RUnlock()
 				}
 			}
 		}(split)
@@ -245,9 +245,9 @@ func (ll *SinglyList) reverse(split *splitResult, wg *sync.WaitGroup) {
 
 	for move != split.tail {
 		temp = move.next
-		ll.Lock()
+		ll.rw.Lock()
 		move.next = prev
-		ll.Unlock()
+		ll.rw.Unlock()
 		prev = move
 		move = temp
 	}
