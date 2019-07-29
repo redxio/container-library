@@ -7,11 +7,13 @@ import (
 	"runtime"
 )
 
+// Corp is a type used for testing
 type Corp struct {
 	ID   int    `json:"ID"`
 	Name string `json:"name"`
 }
 
+// Set implements interface Setter in package container
 func (c *Corp) Set(i interface{}) {
 	v, ok := i.(string)
 	if !ok {
@@ -20,52 +22,39 @@ func (c *Corp) Set(i interface{}) {
 	c.Name = v
 }
 
+// Less implements interface Lesser in package container
 func (c *Corp) Less(kv interface{}) bool {
 	switch v := kv.(type) {
 	case Corp:
-		if c.ID <= v.ID {
-			return true
-		}
+		return c.ID <= v.ID
 	case *Corp:
-		if c.ID <= (*v).ID {
-			return true
-		}
+		return c.ID <= (*v).ID
 	case int:
-		if c.ID <= v {
-			return true
-		}
+		return c.ID <= v
 	case *int:
-		if c.ID <= *v {
-			return true
-		}
+		return c.ID <= *v
 	}
 	return false
 }
 
+// Find implements interface Finder in package container
 func (c *Corp) Find(key interface{}) bool {
 	switch v := key.(type) {
 	// make no sense, used for test purpose only
 	case Corp:
-		if c.ID == v.ID {
-			return true
-		}
+		return c.ID == v.ID
 	// comment same as above
 	case *Corp:
-		if c.ID == v.ID {
-			return true
-		}
+		return c.ID == v.ID
 	case int:
-		if c.ID == v {
-			return true
-		}
+		return c.ID == v
 	case *int:
-		if c.ID == *v {
-			return true
-		}
+		return c.ID == *v
 	}
 	return false
 }
 
+// TestCases contain some test data loaded from testdata.json, which use lately by package to test
 var TestCases []Corp
 
 const testFile = "testdata.json"
