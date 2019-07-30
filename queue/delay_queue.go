@@ -36,7 +36,7 @@ func (dq *DelayQueue) delayService() {
 		item := elem.Value.(*dqItem)
 		now := time.Now()
 
-		if time.Now().Before(item.expire) {
+		if now.Before(item.expire) {
 			dq.rw.Unlock()
 			time.Sleep(item.expire.Sub(now))
 			continue
