@@ -71,18 +71,22 @@ func (dq *DelayQueue) EnQueue(data interface{}, delay int64) {
 
 	dq.rw.Lock()
 
-	elem := dq.queue.Back()
-	var mark *list.Element
-
-	for elem != nil && expireTime.Before(elem.Value.(*dqItem).expire) {
-		mark = elem
-		elem = elem.Prev()
-	}
-
-	if mark == nil {
-		dq.queue.PushBack(&dqItem{data, expireTime})
+	if elem := dq.queue.Front(); elem != nil && expireTime.Before(elem.Value.(*dqItem).expire) {
+		dq.queue.PushFront(&dqItem{data, expireTime})
 	} else {
-		dq.queue.InsertBefore(&dqItem{data, expireTime}, mark)
+		elem := dq.queue.Back()
+		var mark *list.Element
+
+		for elem != nil && expireTime.Before(elem.Value.(*dqItem).expire) {
+			mark = elem
+			elem = elem.Prev()
+		}
+
+		if mark == nil {
+			dq.queue.PushBack(&dqItem{data, expireTime})
+		} else {
+			dq.queue.InsertBefore(&dqItem{data, expireTime}, mark)
+		}
 	}
 
 	dq.rw.Unlock()
