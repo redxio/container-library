@@ -70,6 +70,7 @@ func (dq *DelayQueue) delayService() {
 		dq.rw.Lock()
 
 		if len(dq.reconsumption) > 0 {
+			<-dq.reconsumption
 			dq.rw.Unlock()
 			continue
 		}
