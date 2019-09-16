@@ -11,34 +11,66 @@ type dqItem struct {
 	expire time.Time
 }
 
+type semaphore struct{}
+
+var greenLight, yellowLight semaphore
+
 // DelayQueue represents a delay queue
 type DelayQueue struct {
-	rw        sync.RWMutex
-	queue     *list.List
-	size      int
-	semaphore chan bool
-	delay     chan interface{}
+	rw            sync.RWMutex
+	queue         *list.List
+	size          int
+	worker        chan semaphore
+	reconsumption chan semaphore
+	releaseRLock  bool
+	delay         chan interface{}
 }
 
 // TravFunc is used for traversing delay queue, the argument of TravFunc is data item in queue
 type TravFunc func(interface{})
 
 func (dq *DelayQueue) delayService() {
+	var (
+		elem *list.Element
+		item *dqItem
+		now  time.Time
+	)
+
 	for {
-		dq.rw.Lock()
+		dq.rw.RLock()
+		if dq.releaseRLock {
+			dq.releaseRLock = false
+		}
+
 		if dq.queue.Len() == 0 {
-			dq.rw.Unlock()
-			<-dq.semaphore
+			dq.rw.RUnlock()
+			dq.releaseRLock = true
+			<-dq.worker
 			continue
 		}
 
-		elem := dq.queue.Front()
-		item := elem.Value.(*dqItem)
-		now := time.Now()
+		elem = dq.queue.Front()
+		item = elem.Value.(*dqItem)
+		now = time.Now()
 
 		if now.Before(item.expire) {
+			dq.rw.RUnlock()
+			dq.releaseRLock = true
+			select {
+			case <-dq.reconsumption:
+				continue
+			case <-time.After(item.expire.Sub(now)):
+			}
+		}
+
+		if !dq.releaseRLock {
+			dq.rw.RUnlock()
+		}
+
+		dq.rw.Lock()
+
+		if len(dq.reconsumption) > 0 {
 			dq.rw.Unlock()
-			time.Sleep(item.expire.Sub(now))
 			continue
 		}
 
@@ -53,7 +85,11 @@ func (dq *DelayQueue) delayService() {
 
 // NewDelayQueue returns a initialized delay queue
 func NewDelayQueue() *DelayQueue {
-	dq := &DelayQueue{queue: list.New(), semaphore: make(chan bool)}
+	dq := &DelayQueue{
+		queue:         list.New(),
+		worker:        make(chan semaphore, 1),
+		reconsumption: make(chan semaphore, 1),
+	}
 	go dq.delayService()
 	return dq
 }
@@ -71,29 +107,32 @@ func (dq *DelayQueue) EnQueue(data interface{}, delay int64) {
 
 	dq.rw.Lock()
 
-	if elem := dq.queue.Front(); elem != nil && expireTime.Before(elem.Value.(*dqItem).expire) {
-		dq.queue.PushFront(&dqItem{data, expireTime})
+	elem := dq.queue.Back()
+	var mark *list.Element
+
+	for elem != nil && expireTime.Before(elem.Value.(*dqItem).expire) {
+		mark = elem
+		elem = elem.Prev()
+	}
+
+	item := &dqItem{data, expireTime}
+
+	if elem == nil && mark == nil {
+		dq.queue.PushFront(item)
+	} else if mark == nil {
+		dq.queue.PushBack(item)
+	} else if mark == dq.queue.Front() && elem == nil {
+		dq.queue.PushFront(item)
+		dq.reconsumption <- yellowLight
 	} else {
-		elem := dq.queue.Back()
-		var mark *list.Element
+		dq.queue.InsertBefore(item, mark)
+	}
 
-		for elem != nil && expireTime.Before(elem.Value.(*dqItem).expire) {
-			mark = elem
-			elem = elem.Prev()
-		}
-
-		if mark == nil {
-			dq.queue.PushBack(&dqItem{data, expireTime})
-		} else {
-			dq.queue.InsertBefore(&dqItem{data, expireTime}, mark)
-		}
+	if dq.queue.Len() == 1 {
+		dq.worker <- greenLight
 	}
 
 	dq.rw.Unlock()
-
-	if dq.queue.Len() == 1 {
-		dq.semaphore <- true
-	}
 }
 
 // Receive returns a received only channel, which can be used for receiving something left from queue
