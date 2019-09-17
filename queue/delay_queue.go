@@ -38,6 +38,7 @@ func (dq *DelayQueue) delayService() {
 
 	for {
 		dq.rw.RLock()
+
 		if dq.releaseRLock {
 			dq.releaseRLock = false
 		}
@@ -47,6 +48,10 @@ func (dq *DelayQueue) delayService() {
 			dq.releaseRLock = true
 			<-dq.worker
 			continue
+		}
+
+		if len(dq.reconsumption) > 0 {
+			<-dq.reconsumption
 		}
 
 		elem = dq.queue.Front()
