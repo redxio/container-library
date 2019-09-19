@@ -7,7 +7,7 @@ import (
 )
 
 type dqItem struct {
-	data   interface{}
+	value  interface{}
 	expire time.Time
 }
 
@@ -81,7 +81,7 @@ func (dq *DelayQueue) delayService() {
 		}
 
 		if dq.delay != nil {
-			dq.delay <- item.data
+			dq.delay <- item.value
 		}
 		dq.queue.Remove(elem)
 
@@ -101,12 +101,12 @@ func NewDelayQueue() *DelayQueue {
 }
 
 // EnQueue enters delay queue, stay in queue for delay milliseconds then leave immediately, it will leave immediately if delay less or equal than 0.
-func (dq *DelayQueue) EnQueue(data interface{}, delay int64) {
+func (dq *DelayQueue) EnQueue(value interface{}, delay int64) {
 	expireTime := time.Now().Add(time.Millisecond * time.Duration(delay))
 
 	if delay <= 0 {
 		if dq.delay != nil {
-			dq.delay <- data
+			dq.delay <- value
 		}
 		return
 	}
@@ -121,7 +121,7 @@ func (dq *DelayQueue) EnQueue(data interface{}, delay int64) {
 		elem = elem.Prev()
 	}
 
-	item := &dqItem{data, expireTime}
+	item := &dqItem{value, expireTime}
 
 	if elem == nil && mark == nil {
 		dq.queue.PushFront(item)
@@ -159,7 +159,7 @@ func (dq *DelayQueue) Trav() <-chan interface{} {
 		defer close(ch)
 
 		for elem := dq.queue.Front(); elem != nil; elem = elem.Next() {
-			ch <- elem.Value.(*dqItem).data
+			ch <- elem.Value.(*dqItem).value
 		}
 
 	}()
@@ -177,6 +177,6 @@ func (dq *DelayQueue) TravWithFunc(f TravFunc) {
 	}
 
 	for elem := dq.queue.Front(); elem != nil; elem = elem.Next() {
-		f(elem.Value.(*dqItem).data)
+		f(elem.Value.(*dqItem).value)
 	}
 }
