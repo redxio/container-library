@@ -26,7 +26,7 @@ type DelayQueue struct {
 	delay         chan interface{}
 }
 
-// TravFunc is used for traversing delay queue, the argument of TravFunc is data item in queue
+// TravFunc is used for traversing delay queue, the argument of TravFunc is value stored in queue item
 type TravFunc func(interface{})
 
 func (dq *DelayQueue) delayService() {
@@ -141,7 +141,7 @@ func (dq *DelayQueue) EnQueue(value interface{}, delay int64) {
 	dq.rw.Unlock()
 }
 
-// Receive returns a received only channel, which can be used for receiving something left from queue
+// Receive returns a received only channel, which can be used for receiving value left from queue
 func (dq *DelayQueue) Receive() <-chan interface{} {
 	if dq.delay == nil {
 		dq.delay = make(chan interface{})
