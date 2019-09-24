@@ -22,7 +22,6 @@ type DelayQueue struct {
 	size          int
 	worker        chan semaphore
 	reconsumption chan semaphore
-	releaseRLock  bool
 	delay         chan interface{}
 }
 
@@ -31,21 +30,22 @@ type TravFunc func(interface{})
 
 func (dq *DelayQueue) delayService() {
 	var (
-		elem *list.Element
-		item *dqItem
-		now  time.Time
+		elem         *list.Element
+		item         *dqItem
+		now          time.Time
+		releaseRLock bool
 	)
 
 	for {
 		dq.rw.RLock()
 
-		if dq.releaseRLock {
-			dq.releaseRLock = false
+		if releaseRLock {
+			releaseRLock = false
 		}
 
 		if dq.queue.Len() == 0 {
 			dq.rw.RUnlock()
-			dq.releaseRLock = true
+			releaseRLock = true
 			<-dq.worker
 			continue
 		}
@@ -60,7 +60,7 @@ func (dq *DelayQueue) delayService() {
 
 		if now.Before(item.expire) {
 			dq.rw.RUnlock()
-			dq.releaseRLock = true
+			releaseRLock = true
 			select {
 			case <-dq.reconsumption:
 				continue
@@ -68,7 +68,7 @@ func (dq *DelayQueue) delayService() {
 			}
 		}
 
-		if !dq.releaseRLock {
+		if !releaseRLock {
 			dq.rw.RUnlock()
 		}
 
