@@ -32,7 +32,6 @@ func (dq *DelayQueue) delayService() {
 	var (
 		elem         *list.Element
 		item         *dqItem
-		now          time.Time
 		releaseRLock bool
 	)
 
@@ -56,16 +55,15 @@ func (dq *DelayQueue) delayService() {
 
 		elem = dq.queue.Front()
 		item = elem.Value.(*dqItem)
-		now = time.Now()
 
-		if now.Before(item.expire) {
+		if time.Now().Before(item.expire) {
 			dq.rw.RUnlock()
 			releaseRLock = true
 
 			select {
 			case <-dq.reconsumption:
 				continue
-			case <-time.After(item.expire.Sub(now)):
+			case <-time.After(item.expire.Sub(time.Now())):
 			}
 		}
 
