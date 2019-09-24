@@ -61,6 +61,7 @@ func (dq *DelayQueue) delayService() {
 		if now.Before(item.expire) {
 			dq.rw.RUnlock()
 			releaseRLock = true
+
 			select {
 			case <-dq.reconsumption:
 				continue
@@ -76,8 +77,9 @@ func (dq *DelayQueue) delayService() {
 
 		if len(dq.reconsumption) > 0 {
 			<-dq.reconsumption
-			dq.rw.Unlock()
-			continue
+
+			elem = dq.queue.Front()
+			item = elem.Value.(*dqItem)
 		}
 
 		if dq.delay != nil {
