@@ -30,7 +30,7 @@ type TravFunc func(interface{})
 
 func (dq *DelayQueue) delayService() {
 	var (
-		elem         *list.Element
+		elem, end    *list.Element
 		item         *dqItem
 		releaseRLock bool
 	)
@@ -54,6 +54,7 @@ func (dq *DelayQueue) delayService() {
 		}
 
 		elem = dq.queue.Front()
+		end = elem.Next()
 		item = elem.Value.(*dqItem)
 
 		if time.Now().Before(item.expire) {
@@ -62,8 +63,15 @@ func (dq *DelayQueue) delayService() {
 
 			select {
 			case <-dq.reconsumption:
-				continue
+				if time.Now().Before(dq.queue.Front().Value.(*dqItem).expire) {
+					continue
+				} else if time.Now().Before(item.expire) {
+					end = elem
+				}
 			case <-time.After(item.expire.Sub(time.Now())):
+				if len(dq.reconsumption) > 0 {
+					<-dq.reconsumption
+				}
 			}
 		}
 
@@ -75,15 +83,14 @@ func (dq *DelayQueue) delayService() {
 
 		if len(dq.reconsumption) > 0 {
 			<-dq.reconsumption
-
-			elem = dq.queue.Front()
-			item = elem.Value.(*dqItem)
 		}
 
-		if dq.delay != nil {
-			dq.delay <- item.value
+		for front := dq.queue.Front(); front != end; front = dq.queue.Front() {
+			if dq.delay != nil {
+				dq.delay <- front.Value.(*dqItem).value
+			}
+			dq.queue.Remove(front)
 		}
-		dq.queue.Remove(elem)
 
 		dq.rw.Unlock()
 	}
