@@ -1,4 +1,4 @@
-package queue
+package delayqueue
 
 import (
 	"container/list"
@@ -96,8 +96,8 @@ func (dq *DelayQueue) delayService() {
 	}
 }
 
-// NewDelayQueue returns a initialized delay queue
-func NewDelayQueue() *DelayQueue {
+// New returns a initialized delay queue
+func New() *DelayQueue {
 	dq := &DelayQueue{
 		queue:         list.New(),
 		worker:        make(chan semaphore, 1),
